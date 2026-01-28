@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-
+import { RedisModule } from './redis/redis.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { RobotsModule } from './robots/robots.module';
@@ -12,7 +12,7 @@ import { RobotsModule } from './robots/robots.module';
       isGlobal: true,
       envFilePath: '.env', // ✅ 루트의 .env를 확실히 읽게 고정
     }),
-
+    RedisModule,
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => {
