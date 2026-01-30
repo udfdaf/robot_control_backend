@@ -31,12 +31,6 @@ export class RobotsController {
     return this.robotsService.findAll();
   }
 
-  // 로봇 단건 조회
-  @Get(':id')
-  findById(@Param('id') id: string) {
-    return this.robotsService.findById(id);
-  }
-
   // 인증된 로봇 본인 정보
   @UseGuards(RobotAuthGuard)
   @ApiHeader({
@@ -47,18 +41,6 @@ export class RobotsController {
   @Get('me')
   me(@Req() req: Request) {
     return req.robot;
-  }
-
-  // 로봇 텔레메트리 송신 (Redis 저장)
-  @UseGuards(RobotAuthGuard)
-  @ApiHeader({
-    name: 'x-api-key',
-    description: 'Robot API Key',
-    required: true,
-  })
-  @Post('telemetry')
-  telemetry(@Req() req: Request, @Body() body: TelemetryDto) {
-    return this.robotsService.ingestTelemetry(req.robot!.id, body);
   }
 
   // 현재 로봇의 마지막 telemetry 조회
@@ -77,5 +59,23 @@ export class RobotsController {
       online: data !== null,
       telemetry: data,
     };
+  }
+
+  // 로봇 텔레메트리 송신 (Redis 저장 + MQ publish)
+  @UseGuards(RobotAuthGuard)
+  @ApiHeader({
+    name: 'x-api-key',
+    description: 'Robot API Key',
+    required: true,
+  })
+  @Post('telemetry')
+  telemetry(@Req() req: Request, @Body() body: TelemetryDto) {
+    return this.robotsService.ingestTelemetry(req.robot!.id, body);
+  }
+
+  // 로봇 단건 조회
+  @Get(':id')
+  findById(@Param('id') id: string) {
+    return this.robotsService.findById(id);
   }
 }

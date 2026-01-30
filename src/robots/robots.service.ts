@@ -6,6 +6,7 @@ import { Repository } from 'typeorm';
 
 import { REDIS_CLIENT } from '../redis/redis.module';
 import type { RedisClient } from '../redis/redis.types';
+import { MqService } from '../mq/mq.service';
 import { Robot } from './robot.entity';
 import type { TelemetryDto } from './dto/telemetry.dto';
 
@@ -25,6 +26,8 @@ export class RobotsService {
 
     @Inject(REDIS_CLIENT)
     private readonly redis: RedisClient,
+
+    private readonly mq: MqService,
   ) {}
 
   async create(name: string, model: string) {
@@ -66,7 +69,14 @@ export class RobotsService {
       receivedAt: new Date().toISOString(),
     };
 
+    // 1) Redis: 실시간 최신 상태
     await this.redis.set(key, JSON.stringify(payload), 'EX', ttl);
+
+    // 2) RabbitMQ: 비동기 영속 저장용 이벤트 발행
+    await this.mq.publishTelemetry({
+      eventType: 'telemetry.ingested',
+      ...payload,
+    });
 
     return { ok: true, robotId, ttl };
   }
