@@ -5,14 +5,13 @@ import { RedisModule } from './redis/redis.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { RobotsModule } from './robots/robots.module';
-
+import { TelemetryConsumerModule } from './telemetry-consumer/telemetry-consumer.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env', // ✅ 루트의 .env를 확실히 읽게 고정
     }),
-    RedisModule,
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => {
@@ -39,7 +38,8 @@ import { RobotsModule } from './robots/robots.module';
         };
       },
     }),
-
+    RedisModule,
+    TelemetryConsumerModule,
     RobotsModule,
   ],
   controllers: [AppController],

@@ -73,7 +73,7 @@ export class RobotsService {
     await this.redis.set(key, JSON.stringify(payload), 'EX', ttl);
 
     // 2) RabbitMQ: 비동기 영속 저장용 이벤트 발행
-    await this.mq.publishTelemetry({
+    await this.mq.publish('telemetry.ingested', {
       eventType: 'telemetry.ingested',
       ...payload,
     });
