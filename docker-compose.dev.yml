@@ -1,0 +1,8 @@
+services:
+  backend:
+    command: npm run start:dev
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      CHOKIDAR_USEPOLLING: "true"
