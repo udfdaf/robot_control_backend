@@ -47,32 +47,53 @@ export class TelemetryConsumerService implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
-    this.logger.log('TelemetryConsumerService initializing...');
+    // consume 자체 로그는 굳이 필요 없지만, 초기화 1줄은 남겨도 OK
+    this.logger.log('[EVENT] consumer.init telemetry.history.save');
 
     await this.mq.consume(
       'telemetry.history.save',
       'telemetry.ingested',
       async (payload) => {
+        // 1) payload 구조 오류 → DROP (재시도 X)
         if (!isTelemetryIngestedEvent(payload)) {
-          this.logger.warn(`[raw] ${JSON.stringify(payload)}`);
-          throw new Error('INVALID_TELEMETRY_PAYLOAD');
+          this.logger.warn(
+            `[DROP] telemetry.invalid_payload raw=${JSON.stringify(payload)}`,
+          );
+          return; // ✅ throw 하지 말고 return → ack 되게 (invalid는 drop 정책)
         }
 
-        await this.telemetryRepo.save({
-          robotId: payload.robotId,
-          battery: payload.telemetry.battery,
-          status: payload.telemetry.status,
-          lat: payload.telemetry.lat ?? null,
-          lng: payload.telemetry.lng ?? null,
-          // createdAt 컬럼이 있다면 receivedAt 매핑도 고려 가능
-        });
+        // 2) DB 저장 성공/실패
+        try {
+          await this.telemetryRepo.save({
+            robotId: payload.robotId,
+            battery: payload.telemetry.battery,
+            status: payload.telemetry.status,
+            lat: payload.telemetry.lat ?? null,
+            lng: payload.telemetry.lng ?? null,
+            // createdAt은 CreateDateColumn이면 자동
+          });
 
-        this.logger.log(
-          `Telemetry saved: robotId=${payload.robotId}, battery=${payload.telemetry.battery}, status=${payload.telemetry.status}`,
-        );
+          // ✅ 관제 이벤트 로그: DB 저장 성공
+          this.logger.log(
+            `[EVENT] telemetry.persisted robotId=${payload.robotId} battery=${payload.telemetry.battery} status=${payload.telemetry.status}`,
+          );
+
+          return; // ack
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : String(e);
+
+          // ✅ 관제 이벤트 로그: DB 저장 실패 → 재시도
+          this.logger.error(
+            `[RETRY] telemetry.persist_failed robotId=${payload.robotId} err=${msg}`,
+          );
+
+          throw e; // nack(requeue)
+        }
       },
     );
 
-    this.logger.log('Consume binding registered');
+    this.logger.log(
+      '[EVENT] consumer.bound queue=telemetry.his tory.save rk=telemetry.ingested',
+    );
   }
 }

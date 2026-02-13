@@ -5,6 +5,7 @@ import { RedisModule } from './redis/redis.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { RobotsModule } from './robots/robots.module';
+import { AdminModule } from './admin/admin.module';
 import { TelemetryConsumerModule } from './telemetry-consumer/telemetry-consumer.module';
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { TelemetryConsumerModule } from './telemetry-consumer/telemetry-consumer
     RedisModule,
     TelemetryConsumerModule,
     RobotsModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [AppService],

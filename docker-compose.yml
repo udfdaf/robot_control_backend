@@ -11,6 +11,8 @@ services:
       - postgres
       - redis
       - rabbitmq
+    volumes:
+      - ./logs:/app/logs
 
   postgres:
     image: postgres:15
@@ -39,3 +41,4 @@ services:
 
 volumes:
   postgres_data:
+  
